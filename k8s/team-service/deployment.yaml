@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
         - name: team-service
-          image: crickethub/team-service:latest
+          image: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/team-service:latest
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8082 }]
           env:

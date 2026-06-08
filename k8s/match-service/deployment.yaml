@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
         - name: match-service
-          image: crickethub/match-service:latest
+          image: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/match-service:latest
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8083 }]
           env:

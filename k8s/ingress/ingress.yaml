@@ -4,18 +4,38 @@ metadata:
   name: crickethub-ingress
   namespace: crickethub
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    # For HTTPS, uncomment below and replace with your ACM certificate ARN
+    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    # alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-2-2017-01
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/YOUR_CERT_ID
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+    # Tags for ALB
+    alb.ingress.kubernetes.io/tags: Environment=dev,App=crickethub
 spec:
-  ingressClassName: nginx
   rules:
-    - host: crickethub.local
-      http:
+    - http:
         paths:
           - path: /api
             pathType: Prefix
             backend:
-              service: { name: api-gateway, port: { number: 8080 } }
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:
-              service: { name: frontend, port: { number: 3000 } }
+              service:
+                name: frontend
+                port:
+                  number: 3000

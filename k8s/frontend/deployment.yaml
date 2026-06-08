@@ -11,8 +11,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: crickethub/frontend:latest
-          imagePullPolicy: IfNotPresent
+          image: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/frontend:latest
+          imagePullPolicy: Always
           ports: [{ containerPort: 3000 }]
           readinessProbe:
             httpGet: { path: /, port: 3000 }

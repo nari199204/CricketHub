@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: crickethub/api-gateway:latest
+          image: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/api-gateway:latest
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8080 }]
           env:
