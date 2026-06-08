@@ -1,0 +1,30 @@
+image:
+  registry: crickethub
+  tag: latest
+  pullPolicy: IfNotPresent
+
+postgres:
+  user: crickethub
+  password: crickethub
+  storage: 5Gi
+
+jwtSecret: crickethub-secret-change-me
+
+services:
+  - { name: auth-service, port: 8081, db: auth_db, replicas: 1 }
+  - { name: team-service, port: 8082, db: team_db, replicas: 1 }
+  - { name: match-service, port: 8083, db: match_db, replicas: 1 }
+  - { name: scoring-service, port: 8084, db: scoring_db, replicas: 1 }
+
+gateway:
+  port: 8080
+  replicas: 2
+
+frontend:
+  port: 3000
+  replicas: 2
+
+ingress:
+  enabled: true
+  host: crickethub.local
+  className: nginx

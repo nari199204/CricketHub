@@ -1,0 +1,121 @@
+CREATE DATABASE auth_db;
+CREATE DATABASE team_db;
+CREATE DATABASE match_db;
+CREATE DATABASE scoring_db;
+
+\c auth_db;
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  role VARCHAR(32) NOT NULL DEFAULT 'viewer',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+-- Plain text password for testing: admin123
+INSERT INTO users (email, password_hash, name, role) VALUES
+  ('admin@crickethub.io', 'admin123', 'Admin', 'admin')
+ON CONFLICT (email) DO NOTHING;
+
+\c team_db;
+CREATE TABLE IF NOT EXISTS teams (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  logo_url TEXT,
+  owner_id INT NOT NULL,
+  city VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS players (
+  id SERIAL PRIMARY KEY,
+  team_id INT REFERENCES teams(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  role VARCHAR(64),
+  avatar_url TEXT,
+  jersey_number INT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+INSERT INTO teams (name, logo_url, owner_id, city) VALUES
+  ('Mumbai Strikers', 'https://api.dicebear.com/7.x/shapes/svg?seed=mumbai', 1, 'Mumbai'),
+  ('Delhi Daredevils', 'https://api.dicebear.com/7.x/shapes/svg?seed=delhi', 1, 'Delhi'),
+  ('Chennai Kings', 'https://api.dicebear.com/7.x/shapes/svg?seed=chennai', 1, 'Chennai'),
+  ('Bangalore Bulls', 'https://api.dicebear.com/7.x/shapes/svg?seed=bangalore', 1, 'Bangalore');
+INSERT INTO players (team_id, name, role, avatar_url, jersey_number) VALUES
+  (1, 'Rohit Patel', 'Batsman', 'https://api.dicebear.com/7.x/avataaars/svg?seed=rohit', 45),
+  (1, 'Jasprit B.', 'Bowler', 'https://api.dicebear.com/7.x/avataaars/svg?seed=jasprit', 93),
+  (1, 'Suryakumar', 'All-rounder', 'https://api.dicebear.com/7.x/avataaars/svg?seed=surya', 63),
+  (2, 'Rishabh Pant', 'Wicket-keeper', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pant', 17),
+  (2, 'Axar Patel', 'All-rounder', 'https://api.dicebear.com/7.x/avataaars/svg?seed=axar', 20),
+  (3, 'MS Dhoni', 'Wicket-keeper', 'https://api.dicebear.com/7.x/avataaars/svg?seed=dhoni', 7),
+  (3, 'Ravindra J.', 'All-rounder', 'https://api.dicebear.com/7.x/avataaars/svg?seed=jadeja', 8),
+  (4, 'Virat Kohli', 'Batsman', 'https://api.dicebear.com/7.x/avataaars/svg?seed=virat', 18),
+  (4, 'Glenn Maxwell', 'All-rounder', 'https://api.dicebear.com/7.x/avataaars/svg?seed=maxwell', 32);
+
+\c match_db;
+CREATE TABLE IF NOT EXISTS matches (
+  id SERIAL PRIMARY KEY,
+  team_a_id INT NOT NULL,
+  team_b_id INT NOT NULL,
+  team_a_name VARCHAR(255),
+  team_b_name VARCHAR(255),
+  venue VARCHAR(255),
+  scheduled_at TIMESTAMP,
+  overs INT DEFAULT 20,
+  status VARCHAR(32) DEFAULT 'scheduled',
+  toss_winner_id INT,
+  toss_decision VARCHAR(16),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+INSERT INTO matches (team_a_id, team_b_id, team_a_name, team_b_name, venue, scheduled_at, overs, status) VALUES
+  (1, 2, 'Mumbai Strikers', 'Delhi Daredevils', 'Wankhede Stadium', NOW() + INTERVAL '2 days', 20, 'scheduled'),
+  (3, 4, 'Chennai Kings', 'Bangalore Bulls', 'Chepauk', NOW() + INTERVAL '4 days', 20, 'scheduled'),
+  (1, 3, 'Mumbai Strikers', 'Chennai Kings', 'Wankhede Stadium', NOW() - INTERVAL '3 days', 20, 'completed');
+
+\c scoring_db;
+CREATE TABLE IF NOT EXISTS innings (
+  id SERIAL PRIMARY KEY,
+  match_id INT NOT NULL,
+  batting_team_id INT NOT NULL,
+  bowling_team_id INT NOT NULL,
+  innings_number INT NOT NULL,
+  total_runs INT DEFAULT 0,
+  total_wickets INT DEFAULT 0,
+  total_balls INT DEFAULT 0,
+  extras INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS balls (
+  id SERIAL PRIMARY KEY,
+  innings_id INT REFERENCES innings(id) ON DELETE CASCADE,
+  over_number INT NOT NULL,
+  ball_number INT NOT NULL,
+  batsman_id INT,
+  bowler_id INT,
+  runs INT DEFAULT 0,
+  is_wicket BOOLEAN DEFAULT false,
+  is_wide BOOLEAN DEFAULT false,
+  is_no_ball BOOLEAN DEFAULT false,
+  event VARCHAR(32),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS player_stats (
+  player_id INT PRIMARY KEY,
+  player_name VARCHAR(255),
+  runs_scored INT DEFAULT 0,
+  balls_faced INT DEFAULT 0,
+  wickets_taken INT DEFAULT 0,
+  balls_bowled INT DEFAULT 0,
+  runs_conceded INT DEFAULT 0,
+  matches_played INT DEFAULT 0
+);
+INSERT INTO player_stats (player_id, player_name, runs_scored, balls_faced, wickets_taken, balls_bowled, runs_conceded, matches_played) VALUES
+  (1, 'Rohit Patel', 487, 312, 0, 0, 0, 12),
+  (2, 'Jasprit B.', 23, 30, 18, 240, 198, 12),
+  (3, 'Suryakumar', 392, 215, 4, 60, 72, 10),
+  (4, 'Rishabh Pant', 421, 270, 0, 0, 0, 11),
+  (5, 'Axar Patel', 198, 140, 11, 192, 175, 11),
+  (6, 'MS Dhoni', 312, 198, 0, 0, 0, 9),
+  (7, 'Ravindra J.', 245, 180, 13, 210, 188, 11),
+  (8, 'Virat Kohli', 612, 410, 2, 24, 30, 13),
+  (9, 'Glenn Maxwell', 388, 220, 7, 120, 145, 11)
+ON CONFLICT (player_id) DO NOTHING;

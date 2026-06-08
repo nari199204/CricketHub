@@ -1,0 +1,5 @@
+postgres:
+  storage: 1Gi
+gateway: { replicas: 1 }
+frontend: { replicas: 1 }
+ingress: { enabled: true, host: crickethub.local }

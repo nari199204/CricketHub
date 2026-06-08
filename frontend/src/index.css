@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #020617; }
+
+.card {
+  @apply bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-5 shadow-lg;
+}
+.btn {
+  @apply px-4 py-2 rounded-lg font-semibold transition;
+}
+.btn-primary { @apply bg-pitch-500 hover:bg-pitch-700 text-white; }
+.btn-ghost { @apply bg-slate-800 hover:bg-slate-700 text-slate-100; }
+.input {
+  @apply w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-pitch-500;
+}
+.tag { @apply inline-block px-2 py-0.5 text-xs rounded-md font-semibold; }
+.hero-bg {
+  background-image: linear-gradient(rgba(2,6,23,.85), rgba(2,6,23,.95)), url('https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+}

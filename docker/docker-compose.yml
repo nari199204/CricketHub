@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: crickethub
+      POSTGRES_PASSWORD: crickethub
+      POSTGRES_DB: crickethub
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crickethub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  auth-service:
+    build: ../services/auth-service
+    environment:
+      PORT: 8081
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: crickethub
+      DB_PASSWORD: crickethub
+      DB_NAME: auth_db
+      JWT_SECRET: crickethub-secret-change-me
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  team-service:
+    build: ../services/team-service
+    environment:
+      PORT: 8082
+      DB_HOST: postgres
+      DB_USER: crickethub
+      DB_PASSWORD: crickethub
+      DB_NAME: team_db
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  match-service:
+    build: ../services/match-service
+    environment:
+      PORT: 8083
+      DB_HOST: postgres
+      DB_USER: crickethub
+      DB_PASSWORD: crickethub
+      DB_NAME: match_db
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  scoring-service:
+    build: ../services/scoring-service
+    environment:
+      PORT: 8084
+      DB_HOST: postgres
+      DB_USER: crickethub
+      DB_PASSWORD: crickethub
+      DB_NAME: scoring_db
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api-gateway:
+    build: ../services/api-gateway
+    environment:
+      PORT: 8080
+      JWT_SECRET: crickethub-secret-change-me
+      AUTH_SERVICE_URL: http://auth-service:8081
+      TEAM_SERVICE_URL: http://team-service:8082
+      MATCH_SERVICE_URL: http://match-service:8083
+      SCORING_SERVICE_URL: http://scoring-service:8084
+    ports: ["8080:8080"]
+    depends_on:
+      - auth-service
+      - team-service
+      - match-service
+      - scoring-service
+
+  frontend:
+    build: ../frontend
+    ports: ["3000:3000"]
+    depends_on:
+      - api-gateway
+
+volumes:
+  pgdata:

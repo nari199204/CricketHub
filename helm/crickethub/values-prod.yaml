@@ -1,0 +1,10 @@
+postgres:
+  storage: 20Gi
+gateway: { replicas: 3 }
+frontend: { replicas: 3 }
+services:
+  - { name: auth-service, port: 8081, db: auth_db, replicas: 2 }
+  - { name: team-service, port: 8082, db: team_db, replicas: 2 }
+  - { name: match-service, port: 8083, db: match_db, replicas: 2 }
+  - { name: scoring-service, port: 8084, db: scoring_db, replicas: 2 }
+ingress: { enabled: true, host: crickethub.example.com, className: alb }
