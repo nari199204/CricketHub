@@ -11,7 +11,12 @@ spec:
     spec:
       containers:
         - name: {{ .name }}
+          {{- $override := index $.Values.image.overrides .name }}
+          {{- if $override }}
+          image: "{{ $override.registry }}:{{ $override.tag }}"
+          {{- else }}
           image: "{{ $.Values.image.registry }}/{{ .name }}:{{ $.Values.image.tag }}"
+          {{- end }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           ports: [{ containerPort: {{ .port }} }]
           env:

@@ -1,14 +1,35 @@
 image:
-  registry: crickethub
+  registry: crickethub  # Global default; override per-service below or via CLI
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always   # Always pull to get latest changes
+  overrides:
+    # Per-service image override (optional). Use full ECR repo path if pushing each service
+    frontend:
+      registry: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/frontend
+      tag: latest
+    api-gateway:
+      registry: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/api-gateway
+      tag: latest
+    auth-service:
+      registry: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/auth-service
+      tag: latest
+    team-service:
+      registry: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/team-service
+      tag: latest
+    match-service:
+      registry: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/match-service
+      tag: latest
+    scoring-service:
+      registry: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/scoring-service
+      tag: latest
 
 postgres:
   user: crickethub
-  password: crickethub
-  storage: 5Gi
+  password: crickethub  # Change in production
+  storage: 10Gi
+  storageClass: aws-ebs
 
-jwtSecret: crickethub-secret-change-me
+jwtSecret: crickethub-secret-change-me  # Change in production
 
 services:
   - { name: auth-service, port: 8081, db: auth_db, replicas: 1 }
@@ -18,13 +39,21 @@ services:
 
 gateway:
   port: 8080
-  replicas: 2
+  replicas: 1  # Scale up in production
 
 frontend:
   port: 3000
-  replicas: 2
+  replicas: 1  # Scale up in production
 
 ingress:
   enabled: true
-  host: crickethub.local
+  type: alb      # Change to "nginx" for non-AWS clusters
   className: nginx
+  host: null     # Leave null for ALB (uses auto-generated DNS), or set to domain for NGINX
+
+# For ECR deployment, override with:
+# helm install crickethub ./helm/crickethub -n crickethub \
+#   --set image.registry=123456789.dkr.ecr.ap-south-1.amazonaws.com \
+#   --set postgres.password=YOUR_SECURE_PASSWORD \
+#   --set jwtSecret=YOUR_JWT_SECRET
+

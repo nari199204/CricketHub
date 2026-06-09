@@ -9,7 +9,8 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: "{{ .Values.image.registry }}/api-gateway:{{ .Values.image.tag }}"
+          {{- $override := index .Values.image.overrides "api-gateway" }}
+          image: "{{ $override.registry }}:{{ $override.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports: [{ containerPort: {{ .Values.gateway.port }} }]
           env:
