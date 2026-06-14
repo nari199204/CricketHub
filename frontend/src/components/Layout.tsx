@@ -9,6 +9,7 @@ export default function Layout() {
     { to: '/teams', label: 'Teams' },
     { to: '/matches', label: 'Matches' },
     { to: '/leaderboard', label: 'Leaderboard' },
+    { to: '/predictions', label: 'Predictions' },
   ];
   return (
     <div className="min-h-screen flex flex-col">
@@ -21,7 +22,7 @@ export default function Layout() {
           <nav className="hidden md:flex gap-1">
             {links.map(l => (
               <NavLink key={l.to} to={l.to}
-                className={({isActive}) => `px-3 py-1.5 rounded-lg text-sm font-medium ${isActive ? 'bg-pitch-500/20 text-pitch-50' : 'text-slate-300 hover:bg-slate-800'}`}>
+                className={({ isActive }) => `px-3 py-1.5 rounded-lg text-sm font-medium ${isActive ? 'bg-pitch-500/20 text-pitch-50' : 'text-slate-300 hover:bg-slate-800'}`}>
                 {l.label}
               </NavLink>
             ))}

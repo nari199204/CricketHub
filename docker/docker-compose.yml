@@ -61,6 +61,13 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
+  prediction-service:
+    build: ../services/prediction-service
+    environment:
+      PORT: 8085
+    ports:
+      - "8085:8085"
+
   api-gateway:
     build: ../services/api-gateway
     environment:
@@ -70,12 +77,15 @@ services:
       TEAM_SERVICE_URL: http://team-service:8082
       MATCH_SERVICE_URL: http://match-service:8083
       SCORING_SERVICE_URL: http://scoring-service:8084
+      PREDICTION_SERVICE_URL: http://prediction-service:8085
+
     ports: ["8080:8080"]
     depends_on:
       - auth-service
       - team-service
       - match-service
       - scoring-service
+      - prediction-service
 
   frontend:
     build: ../frontend

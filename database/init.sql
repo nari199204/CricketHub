@@ -2,6 +2,7 @@ CREATE DATABASE auth_db;
 CREATE DATABASE team_db;
 CREATE DATABASE match_db;
 CREATE DATABASE scoring_db;
+CREATE DATABASE prediction_db;
 
 \c auth_db;
 CREATE TABLE IF NOT EXISTS users (
@@ -119,3 +120,17 @@ INSERT INTO player_stats (player_id, player_name, runs_scored, balls_faced, wick
   (8, 'Virat Kohli', 612, 410, 2, 24, 30, 13),
   (9, 'Glenn Maxwell', 388, 220, 7, 120, 145, 11)
 ON CONFLICT (player_id) DO NOTHING;
+
+\c prediction_db;
+CREATE TABLE IF NOT EXISTS predictions (
+  id SERIAL PRIMARY KEY,
+  match_id INT NOT NULL,
+  user_id INT NOT NULL,
+  prediction VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO predictions (match_id, user_id, prediction) VALUES
+  (1, 1, 'Mumbai Strikers'),
+  (2, 1, 'Chennai Kings');
+

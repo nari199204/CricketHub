@@ -19,6 +19,7 @@ spec:
             - { name: TEAM_SERVICE_URL, value: "http://team-service:8082" }
             - { name: MATCH_SERVICE_URL, value: "http://match-service:8083" }
             - { name: SCORING_SERVICE_URL, value: "http://scoring-service:8084" }
+            - { name: PREDICTION_SERVICE_URL, value: "http://prediction-service:8085" }
             - name: JWT_SECRET
               valueFrom: { secretKeyRef: { name: postgres-secret, key: JWT_SECRET } }
           readinessProbe:
