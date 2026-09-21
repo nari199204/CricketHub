@@ -11,6 +11,7 @@ import MatchDetail from './pages/MatchDetail';
 import Scoring from './pages/Scoring';
 import Leaderboard from './pages/Leaderboard';
 import Landing from './pages/Landing';
+import PredictionPage from './pages/PredictionPage';
 
 function Private({ children }: { children: JSX.Element }) {
   const { user } = useAuth();
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/matches/:id" element={<MatchDetail />} />
         <Route path="/matches/:id/score" element={<Scoring />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/predictions" element={<PredictionPage />} />
       </Route>
     </Routes>
   );

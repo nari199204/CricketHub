@@ -22,6 +22,9 @@ image:
     scoring-service:
       registry: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/scoring-service
       tag: latest
+    prediction-service:
+      registry: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/prediction-service
+      tag: latest
 
 postgres:
   user: crickethub
@@ -36,6 +39,7 @@ services:
   - { name: team-service, port: 8082, db: team_db, replicas: 1 }
   - { name: match-service, port: 8083, db: match_db, replicas: 1 }
   - { name: scoring-service, port: 8084, db: scoring_db, replicas: 1 }
+  - { name: prediction-service, port: 8085, db: prediction_db, replicas: 1 }
 
 gateway:
   port: 8080
@@ -44,6 +48,8 @@ gateway:
 frontend:
   port: 3000
   replicas: 1  # Scale up in production
+
+
 
 ingress:
   enabled: true

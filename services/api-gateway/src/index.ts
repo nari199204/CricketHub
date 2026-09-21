@@ -11,7 +11,7 @@ const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:8081';
 const TEAM_URL = process.env.TEAM_SERVICE_URL || 'http://team-service:8082';
 const MATCH_URL = process.env.MATCH_SERVICE_URL || 'http://match-service:8083';
 const SCORING_URL = process.env.SCORING_SERVICE_URL || 'http://scoring-service:8084';
-
+const PREDICTION_URL = process.env.PREDICTION_SERVICE_URL || 'http://prediction-service:8085';
 app.use(cors());
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'api-gateway' }));
 
@@ -86,5 +86,6 @@ app.use('/api/players', proxy(TEAM_URL, { '^(.*)$': '/players$1' }));
 app.use('/api/matches', proxy(MATCH_URL, { '^/api/matches': '' }));
 app.use('/api/scoring', proxy(SCORING_URL, { '^(.*)$': '/scoring$1' }));
 app.use('/api/stats', proxy(SCORING_URL, { '^(.*)$': '/stats$1' }));
+app.use('/api/predictions', proxy(PREDICTION_URL, { '^/api/predictions': '' }));
 
 app.listen(PORT, () => console.log(`[api-gateway] listening on ${PORT}`));
