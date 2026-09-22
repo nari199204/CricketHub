@@ -1,0 +1,233 @@
+name: CricketHub CI/CD
+
+on:
+  pull_request:
+    branches:
+      - helm-charts
+  push:
+    branches:
+      - helm-charts
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: crickethub-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  PYTHON_VERSION: "3.12"
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  validate:
+    name: Validate services
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: frontend
+            path: frontend
+            type: node
+          - name: api-gateway
+            path: services/api-gateway
+            type: node
+          - name: auth-service
+            path: services/auth-service
+            type: node
+          - name: team-service
+            path: services/team-service
+            type: node
+          - name: match-service
+            path: services/match-service
+            type: node
+          - name: scoring-service
+            path: services/scoring-service
+            type: node
+          - name: prediction-service
+            path: services/prediction-service
+            type: python
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: matrix.type == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Set up Python
+        if: matrix.type == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install and build Node service
+        if: matrix.type == 'node'
+        working-directory: ${{ matrix.path }}
+        shell: bash
+        run: |
+          npm install
+          npm run build
+
+      - name: Install and validate Python service
+        if: matrix.type == 'python'
+        working-directory: ${{ matrix.path }}
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m compileall app
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: ./${{ matrix.path }}
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+
+  build-and-push:
+    name: Build and push ECR images
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/helm-charts'
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: frontend
+            context: frontend
+            dockerfile: frontend/Dockerfile
+            ecr_repo: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/frontend
+            region: ap-south-1
+          - name: api-gateway
+            context: services/api-gateway
+            dockerfile: services/api-gateway/Dockerfile
+            ecr_repo: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/api-gateway
+            region: ap-south-1
+          - name: auth-service
+            context: services/auth-service
+            dockerfile: services/auth-service/Dockerfile
+            ecr_repo: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/auth-service
+            region: ap-south-1
+          - name: team-service
+            context: services/team-service
+            dockerfile: services/team-service/Dockerfile
+            ecr_repo: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/team-service
+            region: ap-south-1
+          - name: match-service
+            context: services/match-service
+            dockerfile: services/match-service/Dockerfile
+            ecr_repo: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/match-service
+            region: ap-south-1
+          - name: scoring-service
+            context: services/scoring-service
+            dockerfile: services/scoring-service/Dockerfile
+            ecr_repo: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/crickethub/scoring-service
+            region: ap-south-1
+          - name: prediction-service
+            context: services/prediction-service
+            dockerfile: services/prediction-service/Dockerfile
+            ecr_repo: 114268015259.dkr.ecr.us-east-1.amazonaws.com/prediction-service
+            region: us-east-1
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ matrix.region }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image to ECR
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          provenance: false
+          tags: |
+            ${{ matrix.ecr_repo }}:${{ env.IMAGE_TAG }}
+            ${{ matrix.ecr_repo }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ matrix.ecr_repo }}:${{ env.IMAGE_TAG }}
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+  update-gitops:
+    name: Update GitOps repo image tags
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/helm-charts'
+    timeout-minutes: 20
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v4
+
+      - name: Clone GitOps repo
+        env:
+          GITOPS_REPO_OWNER: ${{ vars.GITOPS_REPO_OWNER || github.repository_owner }}
+          GITOPS_TOKEN: ${{ secrets.GITOPS_REPO_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${GITOPS_TOKEN}@github.com/${GITOPS_REPO_OWNER}/crickethub-gitops.git" gitops
+
+      - name: Update image tags in GitOps overlays
+        working-directory: gitops
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          tag = "${{ github.sha }}"
+          files = [
+              Path("kustomize/overlays/dev/kustomization.yaml"),
+              Path("kustomize/overlays/uat/kustomization.yaml"),
+              Path("kustomize/overlays/prod/kustomization.yaml"),
+          ]
+          for path in files:
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              new_text = re.sub(r"newTag:\s*[^\s\n]+", f"newTag: {tag}", text)
+              if new_text != text:
+                  path.write_text(new_text)
+          PY
+
+      - name: Commit and push updated GitOps repo
+        working-directory: gitops
+        env:
+          GITOPS_REPO_OWNER: ${{ vars.GITOPS_REPO_OWNER || github.repository_owner }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add kustomize/overlays/dev/kustomization.yaml kustomize/overlays/uat/kustomization.yaml kustomize/overlays/prod/kustomization.yaml
+          if git diff --cached --quiet; then
+            echo "No image tag changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: update image tags to ${{ github.sha }}"
+          git push "https://x-access-token:${{ secrets.GITOPS_REPO_TOKEN }}@github.com/${GITOPS_REPO_OWNER}/crickethub-gitops.git" HEAD:main
