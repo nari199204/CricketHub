@@ -1,0 +1,90 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: crickethub-dev
+resources:
+  - ../../base
+labels:
+  - pairs:
+      environment: dev
+      app.kubernetes.io/environment: dev
+images:
+  - name: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/frontend
+    newTag: dev
+  - name: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/api-gateway
+    newTag: dev
+  - name: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/auth-service
+    newTag: dev
+  - name: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/team-service
+    newTag: dev
+  - name: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/match-service
+    newTag: dev
+  - name: 114268015259.dkr.ecr.ap-south-1.amazonaws.com/scoring-service
+    newTag: dev
+  - name: 114268015259.dkr.ecr.us-east-1.amazonaws.com/prediction-service
+    newTag: dev
+patches:
+  - target:
+      kind: Ingress
+      name: crickethub-ingress
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: crickethub-dev-ingress
+      - op: replace
+        path: /metadata/annotations/alb.ingress.kubernetes.io~1load-balancer-name
+        value: crickethub-dev-alb
+      - op: replace
+        path: /metadata/annotations/alb.ingress.kubernetes.io~1group.name
+        value: crickethub-dev
+      - op: replace
+        path: /metadata/annotations/alb.ingress.kubernetes.io~1tags
+        value: Environment=dev,App=crickethub
+  - target:
+      kind: Deployment
+      name: frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: api-gateway
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: auth-service
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: team-service
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: match-service
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: scoring-service
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: prediction-service
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
